@@ -8,6 +8,14 @@ pub struct ParChunked<C: Compressor + Send + Sync> {
     pub chunk_size: Option<usize>,
 }
 
+impl<C: Compressor + Send + Sync> ParChunked<C> {
+    pub fn new_with(compressor: C, chunk_size: Option<usize>) -> Self {
+        Self {
+            compressor, chunk_size
+        }
+    }
+}
+
 #[derive(Clone, Copy, Pod, Zeroable, Debug)]
 #[repr(C)]
 struct ChunkData {

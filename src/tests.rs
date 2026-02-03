@@ -1,5 +1,5 @@
 use crate::*;
-use crate::compressor::Compressor;
+use crate::compressor::*;
 use bytemuck::{Pod, Zeroable};
 
 #[test]

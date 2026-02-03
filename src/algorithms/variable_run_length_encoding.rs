@@ -3,11 +3,21 @@ use rayon::{iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelExtend
 use bytemuck::{Pod, Zeroable};
 use crate::compressor::*;
 
-pub struct VRLE<T: Pod + PartialEq> {
+pub struct VRLE<T: Pod + PartialEq, C: Compressor<Input = T> = NaiveCompressor<T>> {
+    compressor: C,
     _phantom: PhantomData<T>,
 }
 
-impl<T: Pod + PartialEq> Compressor for VRLE<T> {
+impl<T: Pod + PartialEq, C: Compressor<Input = T>> VRLE<T, C> {
+    pub fn new_with(compressor: C) -> Self {
+        Self {
+            compressor,
+            _phantom: Default::default()
+        }
+    }
+}
+
+impl<T: Pod + PartialEq, C: Compressor<Input = T>> Compressor for VRLE<T, C> {
     type Input = T;
     fn compress(&self, uncompressed: &[T], compressed: &mut Vec<u8>) {        
         let mut last = Option::<&T>::None;
@@ -55,6 +65,7 @@ impl<T: Pod + PartialEq> Compressor for VRLE<T> {
 
     fn new() -> Self {
         Self {
+            compressor: C::new(),
             _phantom: Default::default()
         }
     }

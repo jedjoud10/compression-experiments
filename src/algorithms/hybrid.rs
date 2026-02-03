@@ -3,20 +3,21 @@ use rayon::{iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelExtend
 use bytemuck::{Pod, Zeroable};
 use crate::compressor::*;
 
-pub struct Hybrid<T: Pod + PartialEq + Sub<T, Output = T>> {
+pub struct Hybrid<T: Pod + PartialEq> {
     _phantom: PhantomData<T>,
-    algorithms: Vec<Box<dyn Compressor<Input = T>>>,
+    algorithms: Vec<Box<dyn Compressor<Input = T> + Sync + Send>>,
 }
 
-impl<T: Pod + PartialEq + Sub<T, Output = T>> Hybrid<T> {
-    pub fn add<C: Compressor<Input = T> + 'static>(&mut self) {
+impl<T: Pod + PartialEq> Hybrid<T> {
+    pub fn add<C: Compressor<Input = T> + 'static + Send + Sync>(mut self) -> Self {
         let boxed = Box::new(C::new());
-        let boxed: Box<dyn Compressor<Input = T>> = boxed; 
+        let boxed: Box<dyn Compressor<Input = T> + Sync + Send> = boxed; 
         self.algorithms.push(boxed);
+        self
     }
 }
 
-impl<T: Pod + PartialEq + Sub<T, Output = T>> Compressor for Hybrid<T> {
+impl<T: Pod + PartialEq> Compressor for Hybrid<T> {
     type Input = T;
 
     fn compress(&self, uncompressed: &[T], compressed: &mut Vec<u8>) { 

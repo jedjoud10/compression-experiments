@@ -18,6 +18,13 @@ fn compress_into_void<C: Compressor<Input = T>, T: Pod + Zeroable + Sync + Send>
     output.len() as u64
 }
 
+fn compress_into_void_with<C: Compressor<Input = T>, T: Pod + Zeroable + Sync + Send>(compressor: C, data: &[T]) -> u64 {
+    let mut output = Vec::<u8>::with_capacity(10000000);
+    compressor.compress(&data, &mut output);
+    assert!(output.len() > 0);
+    output.len() as u64
+}
+
 fn pseudo_random(seed: u32) -> u32 {
     let mut value = seed;
     value ^= value << 13;
@@ -49,6 +56,16 @@ fn test_for_data_set<T: Pod + Zeroable + Send + Sync + PartialEq + Eq + Hash>(na
     let par_vrle_size = compress_into_void::<ParChunked<VRLE<T>>, T>(&data);
     let lookup_size = compress_into_void::<Lookup<T>, T>(&data);
 
+    let compressor = ParChunked::new_with(
+        Hybrid::new()
+            .add::<VRLE<T>>()
+            .add::<RLE<T>>()
+            .add::<Lookup<T>>()
+            .add::<RLE<T, Lookup<T>>>()
+            .add::<VRLE<T, Lookup<T>>>(),
+    None);
+    let wtf = compress_into_void_with(compressor, &data);
+
     let original_size = (data.len() * std::mem::size_of::<T>()) as u64;
 
     let type_name = std::any::type_name::<T>();
@@ -59,5 +76,6 @@ fn test_for_data_set<T: Pod + Zeroable + Send + Sync + PartialEq + Eq + Hash>(na
     println!("  ParChunked<RLE>: {:.2}%", (par_rle_size as f64 / original_size as f64) * 100.0);
     println!("  ParChunked<VRLE>: {:.2}%", (par_vrle_size as f64 / original_size as f64) * 100.0);
     println!("  Lookup: {:.2}%", (lookup_size as f64 / original_size as f64) * 100.0);
+    println!("  WTF: {:.2}%", (wtf as f64 / original_size as f64) * 100.0);
     println!();
 }

@@ -36,9 +36,11 @@ impl<T: Pod + Eq + Hash + Send + Sync> Compressor for Lookup<T> {
         // 3. the used lookup hashmap
         // we just need to encode the uncompressed data using these parameters
         let (window_size, phase, max_occurences, hash_map) = best_of_the_best_across_window_sizes_and_phases;
+        /*
         dbg!(window_size);
         dbg!(phase);
         dbg!(max_occurences);
+        */
         
         compressed.extend_from_slice(&usize::to_ne_bytes(window_size));
         compressed.extend_from_slice(&usize::to_ne_bytes(phase));
